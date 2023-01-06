@@ -7,7 +7,7 @@
 
 #define MAX_PATH_LEN 512
 char *last_wd;
-char *curr_wd = NULL;
+char *curr_wd;
 
 // TODO error checking
 // TODO argument checking
@@ -17,7 +17,7 @@ void init_wds() {
 	last_wd = malloc(sizeof(char) * MAX_PATH_LEN);
 	curr_wd = malloc(sizeof(char) * MAX_PATH_LEN);
 	getcwd(curr_wd, MAX_PATH_LEN);
-	*last_wd = '\0';
+	strcpy(last_wd, curr_wd);
 }
 
 void update_wds() {
@@ -41,6 +41,10 @@ int cd(int argc, char **argv)
 			struct passwd *pwd = getpwuid(getuid());
 			path = pwd->pw_dir;
 		}
+	} else if (!strcmp(argv[1], "-")) {
+		// special case - go to last directory
+		path = last_wd;
+		printf("%s\n", path);
 	} else {
 		path = argv[1];
 	}
