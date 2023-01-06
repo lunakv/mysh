@@ -28,6 +28,9 @@
     return Argument;
 }
 
+  /* whitespace is ignored */
+[ \t]+          { }
+
 %%
 
 void set_input(int argc, char **argv) {

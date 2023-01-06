@@ -1,14 +1,12 @@
-DEBUG:=$(filter debug,$(MAKECMDGOALS)) 
-
 LEX := flex
 CC := gcc
-CCFLAGS :=
+CCFLAGS := -o mysh
 
-.PHONY: all debug clean in
+.PHONY: all debug clean in test test1
 all: lex.yy.c
-	$(CC) $(CCFLAGS) -o mysh lex.yy.c builtins.c main.c
+	$(CC) $(CCFLAGS) lex.yy.c builtins.c main.c
 
-debug: CCFLAGS=-D DEBUG
+debug: CCFLAGS+= -D DEBUG
 debug: all
 
 lex.yy.c: lexer.lex
@@ -17,6 +15,9 @@ lex.yy.c: lexer.lex
 clean:
 	@rm -f lex.yy.c mysh
 
-in:
-	./mysh in
+test1:
+	cd tests && ./run-tests.sh `cat phase-1.tests`
+
+test:
+	cd tests && ./run-tests.sh
 
