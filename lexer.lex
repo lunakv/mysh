@@ -16,6 +16,7 @@
 #.*\n	return Eol;
 
 ;		return Semicolon;
+;;+.*	return ErrMultipleSemicolons;
 \n		return Eol;
 <<EOF>>	return Eof;
 

@@ -25,12 +25,12 @@ void update_wds() {
 	getcwd(curr_wd, MAX_PATH_LEN);
 }
 
-void cd(int argc, char **argv)
+int cd(int argc, char **argv)
 {
 	char *path;
 	if (argc > 2) {
-		printf("cd: too many arguments\n");
-		return;
+		fprintf(stderr, "cd: too many arguments\n");
+		return 1;
 	}
 
 	if (argc == 1) {
@@ -49,14 +49,16 @@ void cd(int argc, char **argv)
 	
 	// if we changed directories, save new and previous dir
 	update_wds();
+	return 0;
 }
 
-void pwd(int argc, char **argv)
+int pwd(int argc, char **argv)
 {
 	if (argc > 1) {
-		printf("pwd: too many arguments\n");
-		return;
+		fprintf(stderr, "pwd: too many arguments\n");
+		return 1;
 	}
 
 	printf("%s\n", curr_wd);
+	return 0;
 }

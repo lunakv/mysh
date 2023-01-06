@@ -9,6 +9,7 @@ enum InputToken
 	Semicolon,
 	Argument,
 	ErrTokenTooLong,
+	ErrMultipleSemicolons,
 };
 #define InputToken enum InputToken
 
