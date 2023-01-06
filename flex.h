@@ -1,7 +1,8 @@
 // interface between the lexer and the main program
-#ifndef FLEX_INTERFACE_HEADER
-#define FLEX_INTERFACE_HEADER
+#ifndef MYSH_FLEX_HEADER
+#define MYSH_FLEX_HEADER
 
+typedef enum InputToken InputToken;
 enum InputToken
 {
 	Eof,
@@ -11,7 +12,6 @@ enum InputToken
 	ErrTokenTooLong,
 	ErrMultipleSemicolons,
 };
-#define InputToken enum InputToken
 
 #define MAX_TOKEN_LENGTH 1024
 
@@ -19,6 +19,7 @@ enum InputToken
 #define YY_DECL InputToken yylex (void)
 YY_DECL;
 
+// function that defines where flex reads input from
 void set_input(int argc, char **argv);
 
 #endif

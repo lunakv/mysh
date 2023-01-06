@@ -1,3 +1,4 @@
+#include "check.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,23 +7,21 @@
 #include <string.h>
 
 #define MAX_PATH_LEN 512
+// last and current working directory (we need both due to 'cd -')
 char *last_wd;
 char *curr_wd;
 
-// TODO error checking
-// TODO argument checking
-// TODO error reporting
-
 void init_wds() {
-	last_wd = malloc(sizeof(char) * MAX_PATH_LEN);
-	curr_wd = malloc(sizeof(char) * MAX_PATH_LEN);
-	getcwd(curr_wd, MAX_PATH_LEN);
+	last_wd = UNWRAP_P(malloc(sizeof(char) * MAX_PATH_LEN));
+	curr_wd = UNWRAP_P(malloc(sizeof(char) * MAX_PATH_LEN));
+	// TODO gracefully handle when getcwd fails
+	UNWRAP_P(getcwd(curr_wd, MAX_PATH_LEN));
 	strcpy(last_wd, curr_wd);
 }
 
 void update_wds() {
 	strcpy(last_wd, curr_wd);
-	getcwd(curr_wd, MAX_PATH_LEN);
+	UNWRAP_P(getcwd(curr_wd, MAX_PATH_LEN));
 }
 
 int cd(int argc, char **argv)
@@ -39,6 +38,7 @@ int cd(int argc, char **argv)
 		if (path == NULL) {
 			// if $HOME is not set, get it from user's passwd
 			struct passwd *pwd = getpwuid(getuid());
+			CHCK_P(pwd);
 			path = pwd->pw_dir;
 		}
 	} else if (!strcmp(argv[1], "-")) {
@@ -49,7 +49,7 @@ int cd(int argc, char **argv)
 		path = argv[1];
 	}
 
-	chdir(path);
+	CHCK(chdir(path));
 	
 	// if we changed directories, save new and previous dir
 	update_wds();
