@@ -9,5 +9,6 @@
 
 ### Run
 `./mysh <file>` runs the shell with `file` as input. `./mysh` run without an argument uses stdin as input.
+
 ### Test
 `make test` runs all tests in the project. `make test1` runs only phase 1 tests.
