@@ -13,28 +13,27 @@
 %%
 
   /* comment */
-#.*\n	return Eol;
+#.*\n           return Eol;
 
-;		return Semicolon;
-;;+.*	return ErrMultipleSemicolons;
-\n		return Eol;
-<<EOF>>	return Eof;
+  /* command separators */
+;               return Semicolon;
+;;+.*           return ErrMultipleSemicolons;
+\n              return Eol;
+<<EOF>>         return Eof;
 
-[ \t]+  { }
-
-[^;\n \t#]+	{
-		if (yyleng >= MAX_TOKEN_LENGTH)
-			return ErrTokenTooLong;
-		return Argument;
+  /* actual command words */
+[^;\n \t#]+     {
+    if (yyleng >= MAX_TOKEN_LENGTH)
+        return ErrTokenTooLong;
+    return Argument;
 }
 
 %%
 
-void set_input(int argc, char **argv)
-{
-	// TODO handle multiple input arguments
-	if (argc == 1)
-		yyin = stdin;
-	else
-		yyin = fopen(argv[1], "r");
+void set_input(int argc, char **argv) {
+    // arguments beyond the first are ignored (this mirrors behavior of other shells)
+    if (argc == 1)
+        yyin = stdin;
+    else
+        yyin = fopen(argv[1], "r");
 }

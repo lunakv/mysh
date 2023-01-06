@@ -5,7 +5,7 @@ CC := gcc
 CCFLAGS :=
 
 .PHONY: all debug clean in
-all: lex.yy.c main.c builtins.c
+all: lex.yy.c
 	$(CC) $(CCFLAGS) -o mysh lex.yy.c builtins.c main.c
 
 debug: CCFLAGS=-D DEBUG
