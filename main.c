@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <err.h>
 #include "flex.h"
 #include "debug.h"
 #include "builtins.h"
@@ -20,7 +21,7 @@ int last_status = 0;
 char *cmd_argv[MAX_ARGS];
 int cmd_argc = 0;
 
-/* Delete array of command arguments after command is run */
+/* Clean up array of command arguments after command is run */
 void clear_cmd() {
     for (int i = 0; i < cmd_argc; ++i) {
         free(cmd_argv[i]);
@@ -37,23 +38,28 @@ void run_command(int argc, char **argv) {
     for (int i = 1; i < argc; ++i) {
         debug("Argument: %s", argv[i]);
     }
+
     if (!strcmp(command, "cd")) {
         last_status = cd(argc, argv);
     } else if (!strcmp(command, "pwd")) {
         last_status = pwd(argc, argv);
     } else {
         // not a builtin
-        int child_pid;
-        switch (child_pid = fork()) {
+        switch (fork()) {
             case -1:
-                // TODO handle
+                // error
+                warn(NULL);
+                last_status = 1;
                 break;
             case 0:
                 // child
                 execvp(*argv, argv);
-                exit(1);
+                // exec returns only on error
+                warn(NULL);
+                last_status = 1;
                 break;
             default:
+                // parent
                 wait(&last_status);
         }
     }
