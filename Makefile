@@ -1,6 +1,6 @@
 LEX := flex
 CC := gcc
-CCFLAGS := -o mysh
+CCFLAGS := -o mysh -Wall -Wextra
 
 .PHONY: all debug clean in test test1
 all: lex.yy.c

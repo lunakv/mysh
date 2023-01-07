@@ -42,7 +42,7 @@ void run_command(int argc, char **argv) {
     if (!strcmp(command, "cd")) {
         last_status = cd(argc, argv);
     } else if (!strcmp(command, "pwd")) {
-        last_status = pwd(argc, argv);
+        last_status = pwd(argc);
     } else {
         // not a builtin
         switch (fork()) {

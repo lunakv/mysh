@@ -57,7 +57,7 @@ int cd(int argc, char **argv) {
     return 0;
 }
 
-int pwd(int argc, char **_) {
+int pwd(int argc) {
     if (argc > 1) {
         fprintf(stderr, "pwd: too many arguments\n");
         return 1;

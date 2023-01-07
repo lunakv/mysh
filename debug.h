@@ -4,7 +4,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-/* Helper function to print debugging information, but only on DEBUG build */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+/* Helper function to print debugging information, but only on DEBUG builds */
 void debug(const char *format, ...) {
 #ifdef DEBUG
     va_list args;
@@ -14,5 +16,6 @@ void debug(const char *format, ...) {
     va_end(args);
 #endif
 }
+#pragma GCC diagnostic pop
 
 #endif
