@@ -3,7 +3,9 @@
 
 void init_wds();
 
-int cd(int argc, char **argv);
+void cd(int argc, char **argv);
+
+void builtin_exit();
 
 #endif  // MYSH_BUILTINS_H_
 

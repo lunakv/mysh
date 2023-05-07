@@ -1,10 +1,11 @@
 #include "builtins.h"
+#include "check.h"
+#include "status.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <pwd.h>
 #include <string.h>
-#include "check.h"
 
 #define MAX_PATH_LEN 512
 // last and current working directory (we need both due to "cd -")
@@ -26,11 +27,12 @@ void update_wds() {
     UNWRAP_P(getcwd(curr_wd, MAX_PATH_LEN));
 }
 
-int cd(int argc, char **argv) {
+void cd(int argc, char **argv) {
     char *path;
     if (argc > 2) {
         fprintf(stderr, "cd: too many arguments\n");
-        return 1;
+        set_return_status(1);
+        return;
     }
 
     if (argc == 1) {
@@ -54,5 +56,9 @@ int cd(int argc, char **argv) {
 
     // if we changed directories, update new and previous dir
     update_wds();
-    return 0;
+    set_return_status(0);
+}
+
+void builtin_exit() {
+    exit(get_return_status());
 }

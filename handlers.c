@@ -141,9 +141,13 @@ int exec_command(int argc, char **argv, Redirects redirects) {
     for (int i = 1; i < argc; ++i)
         debug("Argument: %s", argv[i]);
 
+    // builtin handlers
     if (!strcmp(command, "cd")) {
         cd(argc, argv);
         return 0;
+    }
+    if (!strcmp(command, "exit")) {
+        builtin_exit();
     }
 
     // not a builtin, fork+exec
