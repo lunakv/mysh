@@ -1,6 +1,7 @@
 #include "builtins.h"
 #include "check.h"
 #include "status.h"
+#include "debug.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -60,5 +61,6 @@ void cd(int argc, char **argv) {
 }
 
 void builtin_exit() {
+    debug("exiting with status %d", get_return_status());
     exit(get_return_status());
 }

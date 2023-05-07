@@ -239,12 +239,12 @@ void handle_invocation(Pipe *pipeline) {
             if (result == -1 && errno != EINTR)
                 warn(NULL);
             debug("Child %d exited with status %d", id, status);
+            set_return_status(status);
         }
         else
             break;
     }
 
-    set_return_status(status);
     // workaround for "file not found" manually exited children
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127)
         set_return_status(127);
