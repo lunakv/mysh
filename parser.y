@@ -27,6 +27,7 @@ extern void set_input(char *path);
     char *text;
     Command command;
     CommandArgument *argument;
+    ArgumentType argumentType;
 }
 
 
@@ -36,9 +37,11 @@ extern void set_input(char *path);
 %token ErrTokenTooLong
 %token Lt
 %token Gt
+%token DoubleGt
 
-%type<command> command
-%type<argument> argument
+%type<command> command command_ne
+%type<argument> argument redirect argument_or_redirect
+%type<argumentType> redirect_token
 %type<text> Argument
 
 %%
@@ -50,22 +53,56 @@ line: invocation | invocation Semicolon | invocation Semicolon line;
 invocation: command { handle_invocation(&$1); }
 
 command:
-    argument command {
+      argument command_ne {
         SLIST_INSERT_HEAD(&$2, $1, next);
         $$ = $2;
-    }
+      }
+    | redirect command {
+        SLIST_INSERT_HEAD(&$2, $1, next);
+        $$ = $2;
+      }
     | argument {
         Command command;
         SLIST_INIT(&command);
         SLIST_INSERT_HEAD(&command, $1, next);
         $$ = command;
-    };
+      }
+    ;
+
+command_ne:
+      argument_or_redirect command_ne {
+        SLIST_INSERT_HEAD(&$2, $1, next);
+        $$ = $2;
+      }
+    | argument_or_redirect {
+        Command command;
+        SLIST_INIT(&command);
+        SLIST_INSERT_HEAD(&command, $1, next);
+        $$ = command;
+      }
+    ;
+
+argument_or_redirect: argument | redirect;
+
+redirect: redirect_token Argument {
+    CommandArgument *ca = malloc_safe(sizeof(CommandArgument));
+    ca->text = $2;
+    ca->type = $1;
+    $$ = ca;
+};
 
 argument: Argument {
     CommandArgument *ca = malloc_safe(sizeof(CommandArgument));
     ca->text = $1;
+    ca->type = Regular;
     $$ = ca;
-}
+};
+
+redirect_token:
+      Lt { $$ = RedirectInput; }
+    | Gt { $$ = RedirectOutput; }
+    | DoubleGt { $$ = RedirectAppend; }
+    ;
 
 %%
 

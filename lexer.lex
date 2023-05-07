@@ -19,12 +19,15 @@ int MAX_TOKEN_LENGTH = 100;
   /* comment */
 #.*\n           return Eol;
 
-  /* command separators */
+  /* special symbols */
 ;               return Semicolon;
 \n              return Eol;
+\<               return Lt;
+\>               return Gt;
+\>\>              return DoubleGt;
 
   /* actual command words */
-[^;\n \t#]+     {
+[^;\n \t#><]+     {
     yylval.text = UNWRAP_P(strdup(yytext));
     return Argument;
 }
