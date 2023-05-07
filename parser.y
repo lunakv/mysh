@@ -65,10 +65,10 @@ pipe:
         $$ = pipe;
       }
     | command Vert pipe {
-    	PipeSegment *segment = malloc_safe(sizeof(PipeSegment));
-    	segment->command = $1;
-	SLIST_INSERT_HEAD(&$3, segment, next);
-	$$ = $3;
+        PipeSegment *segment = malloc_safe(sizeof(PipeSegment));
+        segment->command = $1;
+        SLIST_INSERT_HEAD(&$3, segment, next);
+        $$ = $3;
       }
     ;
 
@@ -127,7 +127,7 @@ redirect_token:
 %%
 
 void yyerror(const char *err) {
-    fprintf(stderr, "ERROR: %s\n", err);
+    fprintf(stderr, "Parse error: %s\n", err);
     set_return_status(2);
 }
 
