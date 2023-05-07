@@ -8,8 +8,6 @@
 #include "structures.h"
 #include "parser.h"
 #include "check.h"
-int MAX_TOKEN_LENGTH = 100;
-
 %}
 
 %option noyywrap nounput noinput

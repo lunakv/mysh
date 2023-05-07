@@ -3,6 +3,8 @@
 
 #include <sys/queue.h>
 
+/* Structures that represent the parsed input command */
+
 enum ArgumentType {
     Regular,
     RedirectInput,
