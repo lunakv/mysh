@@ -6,4 +6,7 @@
 
 void handle_invocation(Pipe *pipeline);
 
+int *get_child_pids();
+int get_child_count();
+
 #endif //MYSH_HANDLERS_H

@@ -16,15 +16,15 @@ char *curr_wd;
 void init_wds() {
     last_wd = malloc_safe(sizeof(char) * MAX_PATH_LEN);
     curr_wd = malloc_safe(sizeof(char) * MAX_PATH_LEN);
-    // TODO gracefully handle when getcwd fails
     UNWRAP_P(getcwd(curr_wd, MAX_PATH_LEN));
     strcpy(last_wd, curr_wd);
 }
 
 void update_wds() {
     strcpy(last_wd, curr_wd);
-    // TODO gracefully handle when getcwd fails (increasing buffer size?)
     UNWRAP_P(getcwd(curr_wd, MAX_PATH_LEN));
+    UNWRAP(setenv("PWD", curr_wd, 1));
+    UNWRAP(setenv("OLDPWD", last_wd, 1));
 }
 
 void cd(int argc, char **argv) {

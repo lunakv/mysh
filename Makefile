@@ -4,12 +4,15 @@ YACCFLAGS := --header=parser.h
 CC := gcc
 CCFLAGS := -o mysh -Wall -Wextra
 
-.PHONY: debug clean in test test1
-mysh: lex.yy.c parser.c builtins.c check.c debug.c handlers.c status.c main.c
-	$(CC) $(CCFLAGS) $^
+.PHONY: all debug clean in test test1
+
+all: mysh
 
 debug: CCFLAGS+= -D DEBUG -O0 -g
-debug: all
+debug: clean mysh
+
+mysh: lex.yy.c parser.c builtins.c check.c debug.c handlers.c status.c main.c
+	$(CC) $(CCFLAGS) $^ -lreadline
 
 lex.yy.c: lexer.lex
 	$(LEX) -o lex.yy.c lexer.lex 

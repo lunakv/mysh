@@ -1,3 +1,4 @@
+#include "handlers.h"
 #include "builtins.h"
 #include "status.h"
 #include "structures.h"
@@ -11,6 +12,7 @@
 #include <sys/wait.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <errno.h>
 
 struct Redirects {
@@ -28,6 +30,9 @@ struct StdDescriptors {
     int stdout;
 };
 typedef struct StdDescriptors StdDescriptors;
+
+int *child_pids;
+int child_count = 0;
 
 /* free allocated structures after command is run */
 void free_command(Command *command) {
@@ -163,6 +168,7 @@ int exec_command(int argc, char **argv, Redirects redirects) {
             set_descriptors(open_redirects(redirects));
             execvp(*argv, argv);
             // exec returns only on error - we can kill the child in that case
+            warn("%s", *argv);
             exit(127);
         default:
             // parent process
@@ -179,10 +185,14 @@ int handle_segment(PipeSegment *segment, int in_fd, int out_fd) {
     return exec_command(arg_count, args, redirects);
 }
 
+
 void handle_invocation(Pipe *pipeline) {
     int size = pipe_segment_count(pipeline);
     debug("Handling pipe with %d segments", size);
-    int child_pids[size];
+    child_count = 0;
+    free(child_pids);
+    child_pids = malloc_safe(size * sizeof(int));
+    child_count = size;
 
     int in_fd = STDIN_FILENO;
     int out_fd = STDOUT_FILENO;
@@ -214,7 +224,7 @@ void handle_invocation(Pipe *pipeline) {
         }
 
         child_pids[i++] = child_pid;
-        if (child_pid == 0) {
+        if (child_pid <= 0) {
             break;
         }
     }
@@ -225,7 +235,9 @@ void handle_invocation(Pipe *pipeline) {
         int id = child_pids[i];
         debug("Waiting on child %d", id);
         if (id > 0) {
-            UNWRAP(waitpid(child_pids[i], &status, 0));
+            int result = waitpid(child_pids[i], &status, 0);
+            if (result == -1 && errno != EINTR)
+                warn(NULL);
             debug("Child %d exited with status %d", id, status);
         }
         else
@@ -233,7 +245,16 @@ void handle_invocation(Pipe *pipeline) {
     }
 
     set_return_status(status);
+    // workaround for "file not found" manually exited children
     if (WIFEXITED(status) && WEXITSTATUS(status) == 127)
         set_return_status(127);
     free_pipeline(pipeline);
+}
+
+int *get_child_pids() {
+    return child_pids;
+}
+
+int get_child_count() {
+    return child_count;
 }
