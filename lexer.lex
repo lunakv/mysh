@@ -21,13 +21,14 @@ int MAX_TOKEN_LENGTH = 100;
 
   /* special symbols */
 ;               return Semicolon;
+\|              return Vert;
 \n              return Eol;
-\<               return Lt;
-\>               return Gt;
-\>\>              return DoubleGt;
+\<              return Lt;
+\>              return Gt;
+\>\>            return DoubleGt;
 
   /* actual command words */
-[^;\n \t#><]+     {
+[^;\n \t#><|]+     {
     yylval.text = UNWRAP_P(strdup(yytext));
     return Argument;
 }

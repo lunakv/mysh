@@ -25,7 +25,8 @@ extern void set_input(char *path);
 
 %union {
     char *text;
-    Command command;
+    Pipe pipe;
+    Command *command;
     CommandArgument *argument;
     ArgumentType argumentType;
 }
@@ -38,7 +39,9 @@ extern void set_input(char *path);
 %token Lt
 %token Gt
 %token DoubleGt
+%token Vert
 
+%type<pipe> pipe
 %type<command> command command_ne
 %type<argument> argument redirect argument_or_redirect
 %type<argumentType> redirect_token
@@ -50,34 +53,51 @@ program: | line | Eol program | line Eol program;
 
 line: invocation | invocation Semicolon | invocation Semicolon line;
 
-invocation: command { handle_invocation(&$1); }
+invocation: pipe { handle_invocation(&$1); }
+
+pipe:
+      command {
+        Pipe pipe;
+        SLIST_INIT(&pipe);
+        PipeSegment *segment = malloc_safe(sizeof(PipeSegment));
+        segment->command = $1;
+        SLIST_INSERT_HEAD(&pipe, segment, next);
+        $$ = pipe;
+      }
+    | command Vert pipe {
+    	PipeSegment *segment = malloc_safe(sizeof(PipeSegment));
+    	segment->command = $1;
+	SLIST_INSERT_HEAD(&$3, segment, next);
+	$$ = $3;
+      }
+    ;
 
 command:
       argument command_ne {
-        SLIST_INSERT_HEAD(&$2, $1, next);
+        SLIST_INSERT_HEAD($2, $1, next);
         $$ = $2;
       }
     | redirect command {
-        SLIST_INSERT_HEAD(&$2, $1, next);
+        SLIST_INSERT_HEAD($2, $1, next);
         $$ = $2;
       }
     | argument {
-        Command command;
-        SLIST_INIT(&command);
-        SLIST_INSERT_HEAD(&command, $1, next);
+        Command *command = malloc_safe(sizeof(Command));
+        SLIST_INIT(command);
+        SLIST_INSERT_HEAD(command, $1, next);
         $$ = command;
       }
     ;
 
 command_ne:
       argument_or_redirect command_ne {
-        SLIST_INSERT_HEAD(&$2, $1, next);
+        SLIST_INSERT_HEAD($2, $1, next);
         $$ = $2;
       }
     | argument_or_redirect {
-        Command command;
-        SLIST_INIT(&command);
-        SLIST_INSERT_HEAD(&command, $1, next);
+        Command *command = malloc_safe(sizeof(Command));
+        SLIST_INIT(command);
+        SLIST_INSERT_HEAD(command, $1, next);
         $$ = command;
       }
     ;

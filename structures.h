@@ -19,4 +19,11 @@ struct CommandArgument {
 typedef struct CommandArgument CommandArgument;
 typedef SLIST_HEAD(Command, CommandArgument) Command;
 
+struct PipeSegment {
+    Command *command;
+    SLIST_ENTRY(PipeSegment) next;
+};
+typedef struct PipeSegment PipeSegment;
+typedef SLIST_HEAD(Pipe, PipeSegment) Pipe;
+
 #endif //MYSH_STRUCTURES_H

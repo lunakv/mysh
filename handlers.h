@@ -4,6 +4,6 @@
 #include "structures.h"
 #include <stdlib.h>
 
-void handle_invocation(Command *command);
+void handle_invocation(Pipe *pipeline);
 
 #endif //MYSH_HANDLERS_H

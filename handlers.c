@@ -11,11 +11,15 @@
 #include <sys/wait.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <errno.h>
 
 struct Redirects {
     char *in;
     char *out;
     bool append;
+
+    int pipe_in;
+    int pipe_out;
 };
 typedef struct Redirects Redirects;
 
@@ -35,7 +39,16 @@ void free_command(Command *command) {
     }
 }
 
-int argument_count(Command *command) {
+void free_pipeline(Pipe *pipeline) {
+    while (!SLIST_EMPTY(pipeline)) {
+        PipeSegment *head = SLIST_FIRST(pipeline);
+        SLIST_REMOVE_HEAD(pipeline, next);
+        free_command(head->command);
+        free(head);
+    }
+}
+
+int command_argument_count(Command *command) {
     int len = 0;
     CommandArgument *arg;
     SLIST_FOREACH(arg, command, next) {
@@ -45,8 +58,17 @@ int argument_count(Command *command) {
     return len;
 }
 
-Redirects parse_arguments(Command *command, char *args[]) {
-    Redirects redirects = { NULL, NULL, false };
+int pipe_segment_count(Pipe *pipe) {
+    int len = 0;
+    PipeSegment *segment;
+    SLIST_FOREACH(segment, pipe, next)
+        len++;
+    return len;
+}
+
+Redirects parse_arguments(PipeSegment *segment, char *args[], int in_fd, int out_fd) {
+    Command *command = segment->command;
+    Redirects redirects = {NULL, NULL, false, in_fd, out_fd };
     int argc = 0;
     CommandArgument *arg;
     SLIST_FOREACH(arg, command, next) {
@@ -80,6 +102,9 @@ struct StdDescriptors open_redirects(Redirects redirects) {
         debug("Opening new stdin at '%s'", redirects.in);
         new_desc.stdin = UNWRAP(open(redirects.in, O_RDONLY, 0666));
         debug("New stdin created at %d", new_desc.stdin);
+    } else if (redirects.pipe_in != -1) {
+        // only redirect to pipe if an explicit redirect from file is not set
+        new_desc.stdin = redirects.pipe_in;
     }
     if (redirects.out != NULL) {
         debug("Opening new stdout at '%s'", redirects.out);
@@ -87,6 +112,9 @@ struct StdDescriptors open_redirects(Redirects redirects) {
         mode |= redirects.append ? O_APPEND : O_TRUNC;
         new_desc.stdout = UNWRAP(open(redirects.out, mode, 0666));
         debug("New stdout created at %d", new_desc.stdout);
+    } else if (redirects.pipe_out != -1) {
+        // only redirect to pipe if an explicit redirect to file is not set
+        new_desc.stdout = redirects.pipe_out;
     }
     return new_desc;
 }
@@ -113,40 +141,95 @@ int exec_command(int argc, char **argv, Redirects redirects) {
     for (int i = 1; i < argc; ++i)
         debug("Argument: %s", argv[i]);
 
-    if (!strcmp(command, "cd"))
-        return cd(argc, argv);
-    if (!strcmp(command, "pwd"))
-        return pwd(argc);
+    if (!strcmp(command, "cd")) {
+        cd(argc, argv);
+        return 0;
+    }
 
     // not a builtin, fork+exec
-    int status;
-    switch (fork()) {
+    int pid;
+    switch (pid = fork()) {
         case -1:
             // error
             warn(NULL);
-            status = 1;
-            break;
+            set_return_status(1);
+            return -1;
         case 0:
             // child process
             set_descriptors(open_redirects(redirects));
             execvp(*argv, argv);
-            // exec returns only on error
-            warn(NULL);
-            status = 1;
-            break;
+            // exec returns only on error - we can kill the child in that case
+            exit(127);
         default:
             // parent process
-            wait(&status);
+            return pid;
     }
-    return status;
 }
 
-void handle_invocation(Command *command) {
-    int arg_count = argument_count(command);
+int handle_segment(PipeSegment *segment, int in_fd, int out_fd) {
+    Command *command = segment->command;
+    int arg_count = command_argument_count(command);
     char *args[arg_count + 1];
-    Redirects redirects = parse_arguments(command, args);
+    Redirects redirects = parse_arguments(segment, args, in_fd, out_fd);
 
-    int return_status = exec_command(arg_count, args, redirects);
-    set_return_status(return_status);
-    free_command(command);
+    return exec_command(arg_count, args, redirects);
+}
+
+void handle_invocation(Pipe *pipeline) {
+    int size = pipe_segment_count(pipeline);
+    debug("Handling pipe with %d segments", size);
+    int child_pids[size];
+
+    int in_fd = STDIN_FILENO;
+    int out_fd = STDOUT_FILENO;
+    int fds[2] = {in_fd, out_fd};
+    int i = 0;
+    PipeSegment *segment;
+    // start all sub-processes, connected with pipes
+    SLIST_FOREACH(segment, pipeline, next) {
+        in_fd = fds[0];
+        if (i < size - 1) {
+            UNWRAP(pipe(fds));
+            out_fd = fds[1];
+        } else {
+            out_fd = STDOUT_FILENO;
+        }
+
+        debug("Creating subprocess, pipe in: %d, pipe out: %d", in_fd, out_fd);
+        int child_pid = UNWRAP(handle_segment(segment, in_fd, out_fd));
+        debug("Subprocess created with pid %d", child_pid);
+
+        // child already duped the file descriptors, we should close them
+        if (in_fd != STDIN_FILENO) {
+            debug("closing fd %d", in_fd);
+            UNWRAP(close(in_fd));
+        }
+        if (out_fd != STDOUT_FILENO) {
+            debug("closing fd %d", out_fd);
+            UNWRAP(close(out_fd));
+        }
+
+        child_pids[i++] = child_pid;
+        if (child_pid == 0) {
+            break;
+        }
+    }
+
+    // wait until all subprocesses end, save last child status
+    int status;
+    for (i = 0; i < size; i++) {
+        int id = child_pids[i];
+        debug("Waiting on child %d", id);
+        if (id > 0) {
+            UNWRAP(waitpid(child_pids[i], &status, 0));
+            debug("Child %d exited with status %d", id, status);
+        }
+        else
+            break;
+    }
+
+    set_return_status(status);
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 127)
+        set_return_status(127);
+    free_pipeline(pipeline);
 }

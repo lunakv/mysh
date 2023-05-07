@@ -56,13 +56,3 @@ int cd(int argc, char **argv) {
     update_wds();
     return 0;
 }
-
-int pwd(int argc) {
-    if (argc > 1) {
-        fprintf(stderr, "pwd: too many arguments\n");
-        return 1;
-    }
-
-    printf("%s\n", curr_wd);
-    return 0;
-}
