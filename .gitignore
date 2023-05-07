@@ -1,3 +1,5 @@
 lex.yy.c
+parser.c
+parser.h
 mysh
 .idea/

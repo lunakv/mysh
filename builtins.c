@@ -13,8 +13,8 @@ char *curr_wd;
 
 /* Initializes the working directory variables on startup */
 void init_wds() {
-    last_wd = UNWRAP_P(malloc(sizeof(char) * MAX_PATH_LEN));
-    curr_wd = UNWRAP_P(malloc(sizeof(char) * MAX_PATH_LEN));
+    last_wd = malloc_safe(sizeof(char) * MAX_PATH_LEN);
+    curr_wd = malloc_safe(sizeof(char) * MAX_PATH_LEN);
     // TODO gracefully handle when getcwd fails
     UNWRAP_P(getcwd(curr_wd, MAX_PATH_LEN));
     strcpy(last_wd, curr_wd);

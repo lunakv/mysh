@@ -3,9 +3,13 @@
  */
 
 %{
-#include "flex.h"
 #include <string.h>
 #include <stdio.h>
+#include "structures.h"
+#include "parser.h"
+#include "check.h"
+int MAX_TOKEN_LENGTH = 100;
+
 %}
 
 %option noyywrap nounput noinput
@@ -17,14 +21,11 @@
 
   /* command separators */
 ;               return Semicolon;
-;;+.*           return ErrMultipleSemicolons;
 \n              return Eol;
-<<EOF>>         return Eof;
 
   /* actual command words */
 [^;\n \t#]+     {
-    if (yyleng >= MAX_TOKEN_LENGTH)
-        return ErrTokenTooLong;
+    yylval.text = UNWRAP_P(strdup(yytext));
     return Argument;
 }
 
@@ -33,10 +34,6 @@
 
 %%
 
-void set_input(int argc, char **argv) {
-    // arguments beyond the first are ignored (this mirrors behavior of other shells)
-    if (argc == 1)
-        yyin = stdin;
-    else
-        yyin = fopen(argv[1], "r");
+void set_input(char *file) {
+    yyin = UNWRAP_P(fopen(file, "r"));
 }
